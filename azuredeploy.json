@@ -1,7 +1,63 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
-  "variables": {},
+  "variables": {
+    "repositoryUrl": "https://github.com/mahiya/deploy-to-azure-test",
+    "branch": "main"
+  },
   "parameters": {},
-  "resources": []
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('appPlanName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "P0V3",
+        "tier": "Premium v3"
+      },
+      "properties": {
+        "reserved": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('appServiceName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appPlanName'))]",
+        "siteConfig": {
+          "linuxFxVersion": "PYTHON|3.11",
+          "alwaysOn": true,
+          "http20Enabled": true,
+          "appSettings": [
+            {
+              "name": "TEST_VARIABLE_KEY",
+              "value": "TEST_VARIABLE_VALUE"
+            }
+          ]
+        },
+        "httpsOnly": true
+      },
+      "resources": [
+        {
+          "type": "sourcecontrols",
+          "apiVersion": "2021-02-01",
+          "name": "web",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('appServiceName'))]"
+          ],
+          "properties": {
+            "RepoUrl": "[variables('repositoryUrl')]",
+            "branch": "[variables('branch')]",
+            "IsManualIntegration": true
+          }
+        }
+      ],
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appPlanName'))]"
+      ]
+    }
+  ]
 }
